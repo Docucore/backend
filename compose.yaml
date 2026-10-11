@@ -17,5 +17,6 @@ services:
       DB_NAME: docucore
       DB_USER: myuser
       DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
     depends_on:
       - mysql
