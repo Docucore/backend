@@ -40,7 +40,7 @@ public class UserService {
             throw new UserNameAlreadyExistsException();
         }
 
-        if(signUpDto.getPassword().equals(signUpDto.getPasswordConfirm())){
+        if(!signUpDto.getPassword().equals(signUpDto.getPasswordConfirm())){
             throw new PasswardNotSameException();
         }
 
