@@ -22,7 +22,7 @@ public class Paper {
     private String title;
     @Column(nullable = false)
     private String title_ko;
-    @Column(nullable = false)
+    @Column(name = "author", columnDefinition = "LONGTEXT",nullable = false)
     private String author;
     private String submitter;
     private String journal_ref;

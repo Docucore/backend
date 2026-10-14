@@ -155,9 +155,9 @@ public class PaperService {
 
                     return SectionDto.builder()
                             .sectionId(section.getId())
-                            .sectionTitle(section.getSection_title())
-                            .sectionOrder(section.getSection_order())
-                            .sectionType((SEC_TYPE) section.getSection_type())
+                            .sectionTitle(section.getSectionTitle())
+                            .sectionOrder(section.getSectionOrder())
+                            .sectionType((SEC_TYPE) section.getSectionType())
                             .content(section.getContent())
                             .contentKo(section.getContent_ko())
                             .summary(summaryDto)

@@ -18,9 +18,15 @@ public class Section {
     @JoinColumn(name = "paper_id", nullable = false)
     private Paper paper;
 
-    private Enum<SEC_TYPE> section_type;
-    private String section_title;
-    private int section_order;
+    @Column(name = "section_type")
+    private SEC_TYPE sectionType;
+
+    @Column(name = "section_title")
+    private String sectionTitle;
+
+    @Column(name = "section_order")
+    private int sectionOrder;
+    @Column(name = "content", columnDefinition = "LONGTEXT")
     private String content;
     private String content_ko; // 국문 번역본
 
