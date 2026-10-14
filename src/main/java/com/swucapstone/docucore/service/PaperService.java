@@ -24,11 +24,15 @@ public class PaperService {
     public List<PaperListDto> search(String keyword) {
         List<Paper> papers = paperRepository.searchByKeyword(keyword.trim());
         List<PaperListDto> paperListDtos = new ArrayList<>();
+
         for (Paper paper : papers) {
+            Integer paperCount = saveRepository.countByPaper(paper);
             paperListDtos.add(PaperListDto.builder()
                     .title(paper.getTitle())
                     .id(paper.getId())
                     .author(paper.getAuthor())
+                            .view(paper.getViews())
+                            .save(paperCount)
                     .build());
         }
         return paperListDtos;
