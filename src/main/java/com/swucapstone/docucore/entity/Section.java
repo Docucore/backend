@@ -23,4 +23,8 @@ public class Section {
     private int section_order;
     private String content;
     private String content_ko; // 국문 번역본
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "summary_id")
+    private Summary summary;
 }

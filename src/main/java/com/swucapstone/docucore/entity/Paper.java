@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 @Entity
 @Table(name = "paper")
@@ -29,4 +30,6 @@ public class Paper {
     private LocalDate publicationDate;
     private int comment; // 분량
     private int views = 0; // 조회수
+    private String arXivId;
+    private CATEGORY category;
 }
