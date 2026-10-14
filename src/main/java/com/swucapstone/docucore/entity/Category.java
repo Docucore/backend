@@ -1,16 +1,9 @@
 package com.swucapstone.docucore.entity;
 
-import jakarta.persistence.*;
-
-@Entity
-public class Category {
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Id
-    private Long id;
-
-    @Column(unique = true)
-    private String name;
-
-    @Column(unique = true)
-    private String name_ko;
+public enum CATEGORY {
+    인공지능,
+    머신러닝,
+    전산언어학,
+    정보검색,
+    컴퓨터비전
 }

@@ -13,14 +13,15 @@ public class Summary {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Id
     private Long id;
+    @Column(name = "is_main", nullable = false)
+    private boolean main;
 
-    @OneToOne
-    @JoinColumn(name = "paper_id", nullable = false)
-    private Paper paper;
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String content;
 
-    private String institution;
-
-    private String main_name;
-    private String main; // 메인 챕터 요약
-    private String conclusion; // 결론 요약
+    @Builder
+    public Summary(boolean main, String content) {
+        this.main = main;
+        this.content = content;
+    }
 }
