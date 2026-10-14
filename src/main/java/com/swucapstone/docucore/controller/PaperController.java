@@ -6,6 +6,7 @@ import com.swucapstone.docucore.dto.SummaryDto;
 import com.swucapstone.docucore.service.PaperService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,6 +14,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/papers")
+@Controller
 public class PaperController {
 
     private final PaperService paperService;

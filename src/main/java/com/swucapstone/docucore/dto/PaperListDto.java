@@ -12,5 +12,4 @@ public class PaperListDto {
     private final String title_ko;
     private final int view;
     private final int save;
-    private final
 }

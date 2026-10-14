@@ -50,7 +50,7 @@ public class PaperJsonImporter implements CommandLineRunner {
     private void importPapers() throws Exception {
 
         ClassPathResource resource = new ClassPathResource(
-                "data/papers_with_summaries_for_mysql.json"
+                "static/data/papers_with_summaries_for_mysql.json"
         );
 
         try (InputStream input = resource.getInputStream()) {
@@ -134,38 +134,45 @@ public class PaperJsonImporter implements CommandLineRunner {
 
                 for (SectionData sectionData : sections) {
 
-                    if (sectionData.summary() == null
-                            || sectionData.summary().content() == null
-                            || sectionData.summary().content().isBlank()) {
-                        throw new IllegalArgumentException(
-                                "섹션 요약이 없습니다: "
-                                        + record.arxiv_id()
-                                        + " / "
-                                        + sectionData.section_title()
-                        );
-                    }
+//                    if (sectionData.summary() == null
+//                            || sectionData.summary().content() == null
+//                            || sectionData.summary().content().isBlank()) {
+////                        throw new IllegalArgumentException(
+////                                "섹션 요약이 없습니다: "
+////                                        + record.arxiv_id()
+////                                        + " / "
+////                                        + sectionData.section_title()
+////                        );
+//                    }
 
-                    // 각 Section에 대응하는 Summary 생성
+// 각 Section에 대응하는 Summary 생성
+                    SummaryData summaryData = sectionData.summary();
+
                     Summary summary = Summary.builder()
-                            .main(sectionData.summary().main())
-                            .content(sectionData.summary().content())
+                            .main(summaryData != null && summaryData.main())
+                            .content(
+                                    summaryData == null || summaryData.content() == null
+                                            ? ""
+                                            : summaryData.content()
+                            )
                             .build();
+
 
                     // Section이 Summary를 소유하고 저장을 전파
                     Section section = Section.builder()
                             .paper(savedPaper)
-                            .section_title(
+                            .sectionTitle(
                                     sectionData.section_title()
                             )
-                            .section_order(
+                            .sectionOrder(
                                     sectionData.section_order()
                             )
-                            .section_type(
+                            .sectionType(
                                     SEC_TYPE.valueOf(
                                             sectionData.section_type()
                                     )
                             )
-                            .content(sectionData.content())
+                            .content(sectionData.content() == null ? "" : sectionData.content())
                             .content_ko(sectionData.content_ko())
                             .summary(summary)
                             .build();

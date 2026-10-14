@@ -6,7 +6,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
 public interface SummaryRepository extends JpaRepository<Summary, Long> {
-    boolean existsByPaper_Id(Long paperId);
 
-    Optional<Summary> findByPaper_Id(Long paperId);
 }

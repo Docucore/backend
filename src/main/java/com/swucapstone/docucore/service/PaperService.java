@@ -24,11 +24,15 @@ public class PaperService {
     public List<PaperListDto> search(String keyword) {
         List<Paper> papers = paperRepository.searchByKeyword(keyword.trim());
         List<PaperListDto> paperListDtos = new ArrayList<>();
+
         for (Paper paper : papers) {
+            Integer paperCount = saveRepository.countByPaper(paper);
             paperListDtos.add(PaperListDto.builder()
                     .title(paper.getTitle())
                     .id(paper.getId())
                     .author(paper.getAuthor())
+                            .view(paper.getViews())
+                            .save(paperCount)
                     .build());
         }
         return paperListDtos;
@@ -151,9 +155,9 @@ public class PaperService {
 
                     return SectionDto.builder()
                             .sectionId(section.getId())
-                            .sectionTitle(section.getSection_title())
-                            .sectionOrder(section.getSection_order())
-                            .sectionType((SEC_TYPE) section.getSection_type())
+                            .sectionTitle(section.getSectionTitle())
+                            .sectionOrder(section.getSectionOrder())
+                            .sectionType((SEC_TYPE) section.getSectionType())
                             .content(section.getContent())
                             .contentKo(section.getContent_ko())
                             .summary(summaryDto)
