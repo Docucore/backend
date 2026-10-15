@@ -1,10 +1,7 @@
 package com.swucapstone.docucore.service;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.swucapstone.docucore.entity.Paper;
-import com.swucapstone.docucore.entity.SEC_TYPE;
-import com.swucapstone.docucore.entity.Section;
-import com.swucapstone.docucore.entity.Summary;
+import com.swucapstone.docucore.entity.*;
 import com.swucapstone.docucore.repository.PaperRepository;
 import com.swucapstone.docucore.repository.SectionRepository;
 
@@ -120,6 +117,7 @@ public class PaperJsonImporter implements CommandLineRunner {
                         )
                         .comment(data.comment())
                         .views(data.views())
+                        .category(toCategory(data.category()))
                         .build();
 
                 Paper savedPaper = paperRepository.save(paper);
@@ -207,7 +205,8 @@ public class PaperJsonImporter implements CommandLineRunner {
             String journal_ref,
             String publicationDate,
             int comment,
-            int views
+            int views,
+            String category
     ) {}
 
     public record SectionData(
@@ -223,4 +222,16 @@ public class PaperJsonImporter implements CommandLineRunner {
             boolean main,
             String content
     ) {}
+
+    private CATEGORY toCategory(String value) {
+        if (value == null || value.isBlank()) {
+            return CATEGORY.OTHER;   // OTHER 상수가 있다면
+        }
+        try {
+            return CATEGORY.valueOf(value.trim());
+        } catch (IllegalArgumentException e) {
+            System.out.println("알 수 없는 카테고리: " + value);
+            return CATEGORY.OTHER;
+        }
+    }
 }

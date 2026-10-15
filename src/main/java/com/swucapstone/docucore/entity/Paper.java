@@ -31,5 +31,6 @@ public class Paper {
     private int comment; // 분량
     private int views = 0; // 조회수
     private String arXivId;
+    @Enumerated(EnumType.STRING)
     private CATEGORY category;
 }

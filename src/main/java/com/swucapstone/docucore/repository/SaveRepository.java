@@ -14,4 +14,6 @@ public interface SaveRepository extends JpaRepository<Save, Long> {
     Optional<Save> findByPaperAndUser(Paper paper, User user);
     List<Save> findByUser(User user);
 
+
+
 }

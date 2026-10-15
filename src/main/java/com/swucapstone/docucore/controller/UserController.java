@@ -1,11 +1,13 @@
 package com.swucapstone.docucore.controller;
 
+import com.swucapstone.docucore.config.CustomUserDetails;
 import com.swucapstone.docucore.dto.LoginRequestDto;
 import com.swucapstone.docucore.dto.SignUpRequestDto;
 import com.swucapstone.docucore.dto.SignUpResponseDto;
 import com.swucapstone.docucore.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -43,5 +45,6 @@ public class UserController {
         String token = userService.login(loginRequestDto);
         return ResponseEntity.ok(token);
     }
+
 
 }
