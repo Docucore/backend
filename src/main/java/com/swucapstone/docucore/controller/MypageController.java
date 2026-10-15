@@ -60,5 +60,13 @@ public class MypageController {
         return ResponseEntity.ok(result);
     }
 
+    @DeleteMapping
+    public ResponseEntity<String> delete(@AuthenticationPrincipal CustomUserDetails user) {
+        Long userId = user.getUserId();
+        String username = userService.delete(userId);
+        return ResponseEntity.ok(username);
+    }
+
+
 
 }

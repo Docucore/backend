@@ -1,5 +1,6 @@
 package com.swucapstone.docucore.dto;
 
+import com.swucapstone.docucore.entity.CATEGORY;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -12,4 +13,5 @@ public class PaperListDto {
     private final String title_ko;
     private final int view;
     private final int save;
+    private CATEGORY category;
 }

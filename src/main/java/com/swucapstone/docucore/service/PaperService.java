@@ -33,6 +33,7 @@ public class PaperService {
                     .author(paper.getAuthor())
                             .view(paper.getViews())
                             .save(paperCount)
+                            .category(paper.getCategory())
                     .build());
         }
         return paperListDtos;
@@ -43,67 +44,64 @@ public class PaperService {
         return PaperReadDto.builder().build();
     }
 
-    public boolean saveById(Long paperId, Long userId) {
-        Paper paper = paperRepository.findById(paperId).orElse(null);
-        if (paper == null) {
-            return false;
-        }
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null) {
-            return false;
-        }
-        Save save = saveRepository.findByPaperAndUser(paper, user).orElse(null);
-        if (save == null) {
-            save = Save.builder()
-                    .user(user)
-                    .paper(paper)
-                    .build();
-            saveRepository.save(save);
-            return true;
-        } else {
-            saveRepository.delete(save);
-        }
-        return false;
-    }
 
 
-    ///  마이페이지 불러오기  ///
+
+
+    /**
+     * 마이페이지 - 북마크한 논문 목록 조회
+     */
     public List<SavedPaperDto> savedPapers(Long userId) {
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null) {
-            throw new UserNotFoundException();
-        }
-        List<Save> papers = saveRepository.findByUser(user);
-        List<SavedPaperDto> savedPaperDtos = new ArrayList<>();
-        if (papers.isEmpty()) {
-            return savedPaperDtos;
-        }
-        for (Save save : papers) {
-            SavedPaperDto dto = SavedPaperDto.builder()
-                    .title(save.getPaper().getTitle())
-                    .build();
-            savedPaperDtos.add(dto);
-        }
-        return savedPaperDtos;
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException());
+
+        List<Save> saves = saveRepository.findByUser(user);
+
+
+        return saves.stream()
+                .map(save -> {
+                    Paper paper = save.getPaper();
+
+                    Progress progress = progressRepository.findByPaperAndUser(paper, user).orElse(null);
+
+                    Integer saveCount = saveRepository.countByPaper(paper);
+
+                    return SavedPaperDto.builder()
+                            .paperId(paper.getId())
+                            .title(paper.getTitle())
+                            .author(paper.getAuthor())
+                            .title_ko(paper.getTitle_ko())
+                            .running_rate(progress != null ? progress.getRunning_rate() : 0)
+                            .publication_date(paper.getPublicationDate().toString())
+                            .view(paper.getViews())
+                            .save(saveCount)
+                            .build();
+                })
+                .toList();
     }
+
 
     public List<SavedPaperDto> readingPapers(Long userId) {
-        User user = userRepository.findById(userId).orElse(null);
-        if (user == null) {
-            throw new UserNotFoundException();
-        }
-        List<Progress> papers = progressRepository.findByUser(user);
-        List<SavedPaperDto> savedPaperDtos = new ArrayList<>();
-        if (papers.isEmpty()) {
-            return savedPaperDtos;
-        }
-        for (Progress save : papers) {
-            SavedPaperDto dto = SavedPaperDto.builder()
-                    .title(save.getPaper().getTitle())
-                    .build();
-            savedPaperDtos.add(dto);
-        }
-        return savedPaperDtos;
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException());
+
+        List<Progress> progresses = progressRepository.findByUser(user);
+
+        return progresses.stream()
+                .map(progress -> {
+                    Paper paper = progress.getPaper();
+
+                    return SavedPaperDto.builder()
+                            .paperId(paper.getId())
+                            .title(paper.getTitle())
+                            .author(paper.getAuthor())
+                            .title_ko(paper.getTitle_ko())
+                            .running_rate(progress.getRunning_rate())
+                            .publication_date(paper.getPublicationDate().toString())
+                            .build();
+                })
+                .toList();
     }
 
 
@@ -192,4 +190,40 @@ public class PaperService {
                         )
                 );
     }
+
+
+    /**
+     * 논문 북마크 토글
+     * @return true: 북마크 추가, false: 북마크 삭제
+     */
+    public boolean saveById(Long paperId, Long userId) {
+
+        // 논문 존재 여부 확인
+        Paper paper = paperRepository.findById(paperId)
+                .orElseThrow(() -> new PaperNotFoundException("Paper not found"));
+
+        // 사용자 존재 여부 확인
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException());
+
+        // 이미 북마크한 논문인지 확인
+        Save save = saveRepository.findByPaperAndUser(paper, user)
+                .orElse(null);
+
+        if (save != null) {
+            // 이미 저장되어 있다면 북마크 삭제
+            saveRepository.delete(save);
+            return false;
+        }
+
+        // 저장되어 있지 않다면 북마크 추가
+        Save newSave = Save.builder()
+                .user(user)
+                .paper(paper)
+                .build();
+
+        saveRepository.save(newSave);
+        return true;
+    }
+
 }

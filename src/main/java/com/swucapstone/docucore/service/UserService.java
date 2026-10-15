@@ -97,4 +97,12 @@ public class UserService {
         }
         throw new UserNotFoundException();
     }
+
+    public String delete(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
+        String deleteuser = user.getName();
+        userRepository.delete(user);
+
+        return deleteuser;
+    }
 }
