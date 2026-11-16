@@ -7,8 +7,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class HighLightRequest {
 
-    private Long userId;
-
     private int start;
 
     private int end;

@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -230,17 +231,39 @@ public class PaperService {
         Paper targetPaper = paperRepository.findById(paperId)
                 .orElseThrow(() -> new RuntimeException("논문을 찾을 수 없습니다."));
 
-        List<Paper> papers = paperRepository.searchByKeyword(
-                targetPaper.getTitle().trim()
+// 1. 제목 기반으로 유사 논문 검색
+        List<Paper> papers = new ArrayList<>(
+                paperRepository.searchByKeyword(targetPaper.getTitle().trim())
         );
 
+// 2. 자기 자신 제외
+        papers.removeIf(paper -> paper.getId().equals(paperId));
+
+// 3. 검색 결과가 5개 미만이면 전체 논문에서 랜덤으로 보충
+        if (papers.size() < 5) {
+
+            List<Paper> allPapers = new ArrayList<>(paperRepository.findAll());
+
+            // 자기 자신 및 이미 검색된 논문 제외
+            allPapers.removeIf(paper ->
+                    paper.getId().equals(paperId) ||
+                            papers.stream().anyMatch(p -> p.getId().equals(paper.getId()))
+            );
+
+            // 랜덤 순서로 섞기
+            Collections.shuffle(allPapers);
+
+            int needed = 5 - papers.size();
+
+            papers.addAll(
+                    allPapers.subList(0, Math.min(needed, allPapers.size()))
+            );
+        }
+
+// 4. 최대 5개 반환
         List<PaperListDto> paperListDtos = new ArrayList<>();
 
         for (Paper paper : papers) {
-
-            if (paper.getId().equals(paperId)) {
-                continue;
-            }
 
             Integer paperCount = saveRepository.countByPaper(paper);
 
@@ -252,13 +275,11 @@ public class PaperService {
                     .save(paperCount)
                     .category(paper.getCategory())
                     .build());
-
-            if (paperListDtos.size() == 5) {
-                break;
-            }
         }
 
         return paperListDtos;
+
+
     }
 
 }
