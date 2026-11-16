@@ -33,6 +33,7 @@ public class HighLightService {
     public HighLightResponse createHighLight(
             Long paperId,
             Long sectionId,
+            Long userId,
             HighLightRequest request
     ) {
 
@@ -54,7 +55,7 @@ public class HighLightService {
             );
         }
 
-        User user = userRepository.findById(request.getUserId())
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."
                 ));
