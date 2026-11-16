@@ -28,6 +28,7 @@ public class Section {
     private int sectionOrder;
     @Column(name = "content", columnDefinition = "LONGTEXT")
     private String content;
+    @Column(columnDefinition = "LONGTEXT")
     private String content_ko; // 국문 번역본
 
     @OneToOne(cascade = CascadeType.ALL)
