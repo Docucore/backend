@@ -226,4 +226,39 @@ public class PaperService {
         return true;
     }
 
+    public List<PaperListDto> recommend(Long paperId) {
+        Paper targetPaper = paperRepository.findById(paperId)
+                .orElseThrow(() -> new RuntimeException("논문을 찾을 수 없습니다."));
+
+        List<Paper> papers = paperRepository.searchByKeyword(
+                targetPaper.getTitle().trim()
+        );
+
+        List<PaperListDto> paperListDtos = new ArrayList<>();
+
+        for (Paper paper : papers) {
+
+            if (paper.getId().equals(paperId)) {
+                continue;
+            }
+
+            Integer paperCount = saveRepository.countByPaper(paper);
+
+            paperListDtos.add(PaperListDto.builder()
+                    .title(paper.getTitle())
+                    .id(paper.getId())
+                    .author(paper.getAuthor())
+                    .view(paper.getViews())
+                    .save(paperCount)
+                    .category(paper.getCategory())
+                    .build());
+
+            if (paperListDtos.size() == 5) {
+                break;
+            }
+        }
+
+        return paperListDtos;
+    }
+
 }

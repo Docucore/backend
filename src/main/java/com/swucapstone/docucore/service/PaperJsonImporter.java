@@ -1,198 +1,185 @@
 package com.swucapstone.docucore.service;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.swucapstone.docucore.entity.*;
 import com.swucapstone.docucore.repository.PaperRepository;
 import com.swucapstone.docucore.repository.SectionRepository;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+//
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+//
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import tools.jackson.databind.ObjectMapper;
-
 import java.io.InputStream;
-import java.time.LocalDate;
 import java.util.List;
 
+@Slf4j
 @Component
+@RequiredArgsConstructor
 @ConditionalOnProperty(
         name = "app.data-import.enabled",
         havingValue = "true"
 )
 public class PaperJsonImporter implements CommandLineRunner {
 
+    private static final String JSON_PATH =
+            "static/data/papers_with_summaries_for_mysql.json";
+
     private final PaperRepository paperRepository;
     private final SectionRepository sectionRepository;
-    private final ObjectMapper objectMapper;
 
-    public PaperJsonImporter(
-            PaperRepository paperRepository,
-            SectionRepository sectionRepository,
-            ObjectMapper objectMapper
-    ) {
-        this.paperRepository = paperRepository;
-        this.sectionRepository = sectionRepository;
-        this.objectMapper = objectMapper;
-    }
+    private final ObjectMapper objectMapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule());
 
     @Override
     @Transactional
     public void run(String... args) throws Exception {
-        importPapers();
-    }
 
-    private void importPapers() throws Exception {
+        log.info("========== Paper JSON Import 시작 ==========");
 
-        ClassPathResource resource = new ClassPathResource(
-                "static/data/papers_with_summaries_for_mysql.json"
-        );
+        // 1. JSON 파일 읽기
+        ClassPathResource resource = new ClassPathResource(JSON_PATH);
 
-        try (InputStream input = resource.getInputStream()) {
-
-            PaperRecord[] records = objectMapper.readValue(
-                    input,
-                    PaperRecord[].class
+        if (!resource.exists()) {
+            throw new IllegalStateException(
+                    "JSON 파일을 찾을 수 없습니다: " + JSON_PATH
             );
+        }
 
-            int paperSaved = 0;
-            int sectionSaved = 0;
-            int summarySaved = 0;
-            int skipped = 0;
+        List<PaperRecord> records;
 
-            for (PaperRecord record : records) {
+        try (InputStream inputStream = resource.getInputStream()) {
+            records = objectMapper.readValue(
+                    inputStream,
+                    new TypeReference<List<PaperRecord>>() {}
+            );
+        }
 
-                // 논문 ID가 없으면 적재할 수 없음
-                if (record.arxiv_id() == null
-                        || record.arxiv_id().isBlank()) {
-                    throw new IllegalArgumentException(
-                            "arxiv_id가 없는 레코드가 있습니다."
-                    );
-                }
+        log.info("JSON에서 읽은 논문 수: {}", records.size());
 
-                // 기존 논문은 중복 적재하지 않음
-                if (paperRepository.findByArXivId(
-                        record.arxiv_id()
-                ).isPresent()) {
-                    skipped++;
-                    continue;
-                }
+        // 2. 기존 데이터 초기화
+        // Section 삭제 시 연결된 Summary도 CascadeType.ALL에 의해 삭제됨
+        log.info("기존 논문 데이터 초기화 시작");
 
-                PaperData data = record.paper();
+        sectionRepository.deleteAll();
+        paperRepository.deleteAll();
 
-                if (data == null) {
-                    throw new IllegalArgumentException(
-                            "논문 메타데이터가 없습니다: "
-                                    + record.arxiv_id()
-                    );
-                }
+        log.info("기존 논문 데이터 초기화 완료");
 
-                // 1. Paper 저장
-                Paper paper = Paper.builder()
-                        .arXivId(record.arxiv_id())
-                        .title(data.title())
-                        .title_ko(
-                                data.title_ko() == null
-                                        || data.title_ko().isBlank()
-                                        ? data.title()
-                                        : data.title_ko()
-                        )
-                        .author(
-                                data.author() == null
-                                        || data.author().isBlank()
-                                        ? "Unknown"
-                                        : data.author()
-                        )
-                        .submitter(data.submitter())
-                        .journal_ref(data.journal_ref())
-                        .publicationDate(
-                                data.publicationDate() == null
-                                        || data.publicationDate().isBlank()
-                                        ? LocalDate.of(1970, 1, 1)
-                                        : LocalDate.parse(
-                                        data.publicationDate()
-                                )
-                        )
-                        .comment(data.comment())
-                        .views(data.views())
-                        .category(toCategory(data.category()))
-                        .build();
+        // 3. 새 JSON 데이터 삽입
+        int paperCount = 0;
+        int sectionCount = 0;
 
-                Paper savedPaper = paperRepository.save(paper);
-                paperSaved++;
+        for (PaperRecord record : records) {
 
-                // 2. Section과 각 Section의 Summary 저장
-                List<SectionData> sections = record.sections();
-
-                if (sections == null) {
-                    continue;
-                }
-
-                for (SectionData sectionData : sections) {
-
-//                    if (sectionData.summary() == null
-//                            || sectionData.summary().content() == null
-//                            || sectionData.summary().content().isBlank()) {
-////                        throw new IllegalArgumentException(
-////                                "섹션 요약이 없습니다: "
-////                                        + record.arxiv_id()
-////                                        + " / "
-////                                        + sectionData.section_title()
-////                        );
-//                    }
-
-// 각 Section에 대응하는 Summary 생성
-                    SummaryData summaryData = sectionData.summary();
-
-                    Summary summary = Summary.builder()
-                            .main(summaryData != null && summaryData.main())
-                            .content(
-                                    summaryData == null || summaryData.content() == null
-                                            ? ""
-                                            : summaryData.content()
-                            )
-                            .build();
-
-
-                    // Section이 Summary를 소유하고 저장을 전파
-                    Section section = Section.builder()
-                            .paper(savedPaper)
-                            .sectionTitle(
-                                    sectionData.section_title()
-                            )
-                            .sectionOrder(
-                                    sectionData.section_order()
-                            )
-                            .sectionType(
-                                    SEC_TYPE.valueOf(
-                                            sectionData.section_type()
-                                    )
-                            )
-                            .content(sectionData.content() == null ? "" : sectionData.content())
-                            .content_ko(sectionData.content_ko())
-                            .summary(summary)
-                            .build();
-
-                    // CascadeType.ALL로 Summary도 함께 저장됨
-                    sectionRepository.save(section);
-
-                    sectionSaved++;
-                    summarySaved++;
-                }
+            if (record.paper() == null) {
+                throw new IllegalStateException(
+                        "Paper 정보가 없습니다. arXiv ID: " + record.arxiv_id()
+                );
             }
 
-            System.out.println("===== 데이터 적재 결과 =====");
-            System.out.println("저장된 논문 수: " + paperSaved);
-            System.out.println("저장된 섹션 수: " + sectionSaved);
-            System.out.println("저장된 요약 수: " + summarySaved);
-            System.out.println("건너뛴 논문 수: " + skipped);
+            PaperData data = record.paper();
+
+            // 3-1. Paper 생성
+            Paper paper = Paper.builder()
+                    .title(data.title())
+                    .title_ko(data.title_ko())
+                    .author(data.author())
+                    .submitter(data.submitter())
+                    .journal_ref(data.journal_ref())
+                    .publicationDate(data.publicationDate())
+                    .comment(data.comment())
+                    .views(data.views())
+                    .arXivId(record.arxiv_id())
+                    .category(parseCategory(data.category()))
+                    .build();
+
+            Paper savedPaper = paperRepository.save(paper);
+            paperCount++;
+
+            // 3-2. Section 및 Summary 생성
+            if (record.sections() == null) {
+                continue;
+            }
+
+            for (SectionData sectionData : record.sections()) {
+
+                if (sectionData.summary() == null) {
+                    throw new IllegalStateException(
+                            "Summary 정보가 없습니다. arXiv ID: "
+                                    + record.arxiv_id()
+                                    + ", section: "
+                                    + sectionData.section_title()
+                    );
+                }
+
+                SummaryData summaryData = sectionData.summary();
+
+                Summary summary = Summary.builder()
+                        .main(summaryData.main())
+                        .content(summaryData.content())
+                        .build();
+
+                Section section = Section.builder()
+                        .paper(savedPaper)
+                        .sectionType(parseSectionType(
+                                sectionData.section_type()
+                        ))
+                        .sectionTitle(sectionData.section_title())
+                        .sectionOrder(sectionData.section_order())
+                        .content(sectionData.content())
+                        .content_ko(sectionData.content_ko())
+                        .summary(summary)
+                        .build();
+
+                sectionRepository.save(section);
+                sectionCount++;
+            }
+        }
+
+        log.info("========== Paper JSON Import 완료 ==========");
+        log.info("삽입된 Paper 수: {}", paperCount);
+        log.info("삽입된 Section 수: {}", sectionCount);
+    }
+
+    // CATEGORY 문자열을 Enum으로 변환
+    private CATEGORY parseCategory(String category) {
+
+        if (category == null || category.isBlank()) {
+            return CATEGORY.OTHER;
+        }
+
+        try {
+            return CATEGORY.valueOf(category.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return CATEGORY.OTHER;
         }
     }
 
+    // SEC_TYPE 문자열을 Enum으로 변환
+    private SEC_TYPE parseSectionType(String sectionType) {
+
+        if (sectionType == null || sectionType.isBlank()) {
+            return SEC_TYPE.OTHER;
+        }
+
+        try {
+            return SEC_TYPE.valueOf(sectionType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return SEC_TYPE.OTHER;
+        }
+    }
+
+    // JSON DTO
     public record PaperRecord(
-            @JsonProperty("arxiv_id") String arxiv_id,
+            String arxiv_id,
             PaperData paper,
             List<SectionData> sections
     ) {}
@@ -203,7 +190,7 @@ public class PaperJsonImporter implements CommandLineRunner {
             String author,
             String submitter,
             String journal_ref,
-            String publicationDate,
+            java.time.LocalDate publicationDate,
             int comment,
             int views,
             String category
@@ -222,16 +209,4 @@ public class PaperJsonImporter implements CommandLineRunner {
             boolean main,
             String content
     ) {}
-
-    private CATEGORY toCategory(String value) {
-        if (value == null || value.isBlank()) {
-            return CATEGORY.OTHER;   // OTHER 상수가 있다면
-        }
-        try {
-            return CATEGORY.valueOf(value.trim());
-        } catch (IllegalArgumentException e) {
-            System.out.println("알 수 없는 카테고리: " + value);
-            return CATEGORY.OTHER;
-        }
-    }
 }

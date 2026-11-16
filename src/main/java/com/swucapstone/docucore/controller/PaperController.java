@@ -58,4 +58,12 @@ public class PaperController {
         boolean saved = paperService.saveById(paperId, userId);
         return ResponseEntity.ok(saved);
     }
+
+    // 논문 추천
+    @GetMapping("/{paperId}/recommend")
+    public ResponseEntity<List<PaperListDto>> recommend(
+            @PathVariable Long paperId) {
+
+        return ResponseEntity.ok(paperService.recommend(paperId));
+    }
 }
