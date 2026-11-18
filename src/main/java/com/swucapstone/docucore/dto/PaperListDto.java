@@ -14,4 +14,5 @@ public class PaperListDto {
     private final int view;
     private final int save;
     private CATEGORY category;
+    private String publication_date;
 }

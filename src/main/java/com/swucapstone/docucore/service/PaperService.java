@@ -30,6 +30,8 @@ public class PaperService {
             Integer paperCount = saveRepository.countByPaper(paper);
             paperListDtos.add(PaperListDto.builder()
                     .title(paper.getTitle())
+                    .title_ko(paper.getTitle_ko())
+                            .publication_date(paper.getPublicationDate().toString())
                     .id(paper.getId())
                     .author(paper.getAuthor())
                             .view(paper.getViews())
@@ -77,6 +79,7 @@ public class PaperService {
                             .publication_date(paper.getPublicationDate().toString())
                             .view(paper.getViews())
                             .save(saveCount)
+                            .category(paper.getCategory())
                             .build();
                 })
                 .toList();
@@ -92,6 +95,7 @@ public class PaperService {
         return progresses.stream()
                 .map(progress -> {
                     Paper paper = progress.getPaper();
+                    Integer saveCount = saveRepository.countByPaper(paper);
 
                     return SavedPaperDto.builder()
                             .paperId(paper.getId())
@@ -100,6 +104,9 @@ public class PaperService {
                             .title_ko(paper.getTitle_ko())
                             .running_rate(progress.getRunning_rate())
                             .publication_date(paper.getPublicationDate().toString())
+                            .view(paper.getViews())
+                            .save(saveCount)
+                            .category(paper.getCategory())
                             .build();
                 })
                 .toList();
