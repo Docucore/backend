@@ -281,6 +281,8 @@ public class PaperService {
                     .view(paper.getViews())
                     .save(paperCount)
                     .category(paper.getCategory())
+                            .title_ko(paper.getTitle_ko())
+                            .publication_date(paper.getPublicationDate().toString())
                     .build());
         }
 
